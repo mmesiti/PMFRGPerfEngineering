@@ -28,9 +28,11 @@ MPIEXEC="$HOME/.julia/bin/mpiexecjl --project=$PROJECT"
 # This file - unfortunately with sbatch the trick ${BASH_SOURCE[0]} does not work.
 SCRIPT="$PROJECT/src/slurm-benchmarking_MPI.sh"
 
+echo "Julia version:"
+julia --version
+
 COMMAND=($MPIEXEC -n $SLURM_NTASKS 
-         julia +release
-	 --project="$PROJECT" 
+         julia --project="$PROJECT" 
          --optimize=3 
          --threads $SLURM_CPUS_PER_TASK 
 	 $SCRIPT) 
