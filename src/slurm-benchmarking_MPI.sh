@@ -9,8 +9,7 @@
 #SBATCH --dependency singleton
 #SBATCH --job-name pmfrg-benchmark
 
-ROOT="$HOME/PMFRG"
-PROJECT="$ROOT/PMFRGPerfEngineering"
+PROJECT="$PWD"
 
 set -o nounset
 module use "$HOME/modules"
