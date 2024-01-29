@@ -1,16 +1,15 @@
 #!/bin/bash
 #=
 #SBATCH --partition cpuonly
-#SBATCH --time 30 
+#SBATCH --time 1440
 #SBATCH --nodes 1
 #SBATCH --ntasks-per-node 1
 #SBATCH --cpus-per-task=76
 #SBATCH --exclusive
 #SBATCH --dependency singleton
-#SBATCH --job-name pmfrg-benchmark
+#SBATCH --job-name pmfrg-benchmark-1
 
-ROOT="/home/hk-project-scs/hs2454/PMFRG"
-PROJECT="$ROOT/TestProject"
+PROJECT="$PWD"
 
 set -o nounset
 module use "$HOME/modules"
@@ -19,17 +18,20 @@ module use "$HOME/modules"
 # (as set by MPIPreferences.jl).
 module load mpi/openmpi/4.1 
 module load julia/juliaup
-
 export ZES_ENABLE_SYSMAN=1
 export OMPI_MCA_coll_hcoll_enable="0"
 export UCX_ERROR_SIGNALS="SIGILL,SIGBUS,SIGFPE"
 
-MPIEXEC="/home/hk-project-scs/hs2454/.julia/bin/mpiexecjl --project=$PROJECT"
-SCRIPT="$ROOT/PMFRG.jl/performance-engineering/slurm-profiling_MPI.sh"
+MPIEXEC="$HOME/.julia/bin/mpiexecjl --project=$PROJECT"
+
+# This file - unfortunately with sbatch the trick ${BASH_SOURCE[0]} does not work.
+SCRIPT="$PROJECT/src/slurm-benchmarking_MPI.sh"
+
+echo "Julia version:"
+julia --version
 
 COMMAND=($MPIEXEC -n $SLURM_NTASKS 
-         julia +release 
-	 --project="$PROJECT" 
+         julia --project="$PROJECT" 
          --optimize=3 
          --threads $SLURM_CPUS_PER_TASK 
 	 $SCRIPT) 
@@ -43,7 +45,6 @@ exit
 
 =#
 using MPI
-using Profile
 MPI.Init()
 
 rank = 0
@@ -90,6 +91,8 @@ using SpinFRGLattices.SquareLattice
 print_barrier("Loading TimerOutputs")
 using TimerOutputs
 
+TimerOutputs.enable_debug_timings(PMFRG)
+TimerOutputs.enable_debug_timings(Base.get_extension(PMFRG,:PMFRGMPIExt))
 
 # Number of nearest neighbor bonds 
 # up to which correlations are treated in the lattice. 
@@ -110,9 +113,6 @@ couplings = [J1, J2]
 
 print_barrier("GetSquareLattice - system toy")
 SystemToy = getSquareLattice(NLenToy, couplings)
-
-print_barrier("GetSquareLattice")
-System = getSquareLattice(NLen, couplings) 
 
 print_barrier("Warm up")
 
@@ -136,9 +136,10 @@ flowpath = "$tempdir/flows/" # specify path for vertex checkpoints
 print_barrier("SolveFRG - toy")
 Solution, saved_values = SolveFRG(
     Par,
+    UseMPI(),
     MainFile=mainFile,
     CheckpointDirectory=flowpath,
-    method=BS3(),
+    method=DP5(),
     VertexCheckpoints=[],
     CheckPointSteps=3,
 );
@@ -147,14 +148,17 @@ Solution, saved_values = SolveFRG(
 
 print_barrier("Warmup done, timing real problem now.")
 
+print_barrier("GetSquareLattice")
+System = getSquareLattice(18, [1.]) 
+
 
 print_barrier("Get Params")
 Par = Params( #create a group of all parameters to pass them to the FRG Solver
     System, # geometry, this is always required
     OneLoop(), # method. OneLoop() is the default
-    T=0.5, # Temperature for the simulation.
-    N=25, # Number of positive Matsubara frequencies for the four-point vertex.
-    accuracy=1e-3, #absolute and relative tolerance of the ODE solver.
+    T=0.4, # Temperature for the simulation.
+    N=50, # Number of positive Matsubara frequencies for the four-point vertex.
+    accuracy=1e-9, #absolute and relative tolerance of the ODE solver.
     # For further optional arguments, see documentation of 'NumericalParams'
     MinimalOutput=true,
 )
@@ -165,23 +169,19 @@ rm(tempdir, recursive=true, force=true)
 mainFile = "$tempdir/" * PMFRG.generateFileName(Par, "_testFile") # specify a file name for main Output
 flowpath = "$tempdir/flows/" # specify path for vertex checkpoints
 
+reset_timer!()
 print_barrier("SolveFRG")
-
-using PProf
-@profile Solution, saved_values = SolveFRG(
+@time Solution, saved_values = SolveFRG(
     Par,
+    UseMPI(),
     MainFile=mainFile,
     CheckpointDirectory=flowpath,
-    method=BS3(),
+    method=VCABM(),
     VertexCheckpoints=[],
     CheckPointSteps=3,
 );
 
-@mpi_synchronize println("PProf should start now on rank 0...")
-if MPI.Comm_rank(MPI.COMM_WORLD) == 0
-	PProf.pprof()
-end
-MPI.Barrier(MPI.COMM_WORLD)
+@mpi_synchronize print_timer()
 
 if MPI.Initialized()
  MPI.Finalize()

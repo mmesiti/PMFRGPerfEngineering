@@ -10,3 +10,17 @@ of Nils Niggeman's [PMFRG.jl code](https://github.com/NilsNiggemann/PMFRG.jl).
 To manage the dependencies it can be useful to install
 
 https://github.com/NilsNiggemann/JuliaPMFRGRegistry
+
+
+## What is what
+
+Brief description of which script does what
+
+### General
+All scripts mentioned here should be julia-version agnostic.
+Quite some care must be made to make sure that they run in their own environment
+and the environment must match the julia version, 
+or there can be problems.
+Also, MPIPreferences.use_system_binary() 
+must have been run in the environment, 
+otherwise terrible performance might ensue. 
