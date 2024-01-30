@@ -73,7 +73,7 @@ function print_barrier(args...)
     @mpi_synchronize println(args...)
 end
 
-workdir = "dir$rank-$(Threads.nthreads())"
+workdir = "2-dir$rank-$(Threads.nthreads())"
 print_barrier("Removing data from previous runs ($workdir)")
 rm(workdir, recursive=true, force=true) 
 mkdir(workdir)
@@ -129,7 +129,7 @@ Par = Params( #create a group of all parameters to pass them to the FRG Solver
     MinimalOutput=true,
 )
 
-tempdir = "temp-$rank"
+tempdir = "temp-2-$rank"
 print_barrier("Removing data from previous runs ($tempdir)")
 rm(tempdir, recursive=true, force=true)
 mainFile = "$tempdir/" * PMFRG.generateFileName(Par, "_testFile") # specify a file name for main Output
