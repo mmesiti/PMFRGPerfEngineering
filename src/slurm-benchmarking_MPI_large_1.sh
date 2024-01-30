@@ -25,7 +25,7 @@ export UCX_ERROR_SIGNALS="SIGILL,SIGBUS,SIGFPE"
 MPIEXEC="$HOME/.julia/bin/mpiexecjl --project=$PROJECT"
 
 # This file - unfortunately with sbatch the trick ${BASH_SOURCE[0]} does not work.
-SCRIPT="$PROJECT/src/slurm-benchmarking_MPI.sh"
+SCRIPT="$PROJECT/src/slurm-benchmarking_MPI_large1.sh"
 
 echo "Julia version:"
 julia --version
@@ -90,6 +90,8 @@ using PMFRG
 using SpinFRGLattices.SquareLattice
 print_barrier("Loading TimerOutputs")
 using TimerOutputs
+print_barrier("Loading OrdinaryDiffEq")
+using OrdinaryDiffEq
 
 TimerOutputs.enable_debug_timings(PMFRG)
 TimerOutputs.enable_debug_timings(Base.get_extension(PMFRG,:PMFRGMPIExt))
