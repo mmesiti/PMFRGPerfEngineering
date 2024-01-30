@@ -25,7 +25,7 @@ export UCX_ERROR_SIGNALS="SIGILL,SIGBUS,SIGFPE"
 MPIEXEC="$HOME/.julia/bin/mpiexecjl --project=$PROJECT"
 
 # This file - unfortunately with sbatch the trick ${BASH_SOURCE[0]} does not work.
-SCRIPT="$PROJECT/src/slurm-benchmarking_MPI_large1.sh"
+SCRIPT="$PROJECT/src/slurm-benchmarking_MPI_large_1.sh"
 
 echo "Julia version:"
 julia --version
