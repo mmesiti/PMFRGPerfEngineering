@@ -94,10 +94,19 @@ using TimerOutputs
 print_barrier("Loading OrdinaryDiffEq")
 using OrdinaryDiffEq
 
-TimerOutputs.enable_debug_timings(PMFRG)
-TimerOutputs.enable_debug_timings(Base.get_extension(PMFRG,:PMFRGMPIExt))
+# This does not seem to work.
+# TimerOutputs.enable_debug_timings(PMFRG)
+# TimerOutputs.enable_debug_timings(Base.get_extension(PMFRG,:PMFRGMPIExt))
+# Message is "timeit_debug_enable"
+# This might instead do
+Core.eval(PMFRG, :(timeit_debug_enabled()=true))
+Core.eval(PMFRGCore, :(timeit_debug_enabled()=true))
+Core.eval(Base.get_extension(PMFRGCore, :PMFRGCoreMPIExt), :(timeit_debug_enabled()=true))
+Core.eval(PMFRGSolve, :(timeit_debug_enabled()=true))
+Core.eval(Base.get_extension(PMFRGSolve, :PMFRGSolveMPIExt), :(timeit_debug_enabled()=true))
 
-# Number of nearest neighbor bonds 
+
+# Number of nearest neighbor bonds
 # up to which correlations are treated in the lattice. 
 # For NLen = 5, all correlations C_{ij} are zero 
 #if sites i and j are separated by more than 5 nearest neighbor bonds.
