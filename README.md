@@ -24,3 +24,18 @@ or there can be problems.
 Also, MPIPreferences.use_system_binary() 
 must have been run in the environment, 
 otherwise terrible performance might ensue. 
+
+## How to use: for performance tweaking
+This package is intended to be a client 
+of some the other packages
+in the PMFRG ecosystem.
+
+These packages need to be added as dev dependencies
+to this one
+all at once,
+using 
+```julia
+] dev https://github.com/NilsNiggemann/SpinFRGLattices.jl.git ./PMFRG.jl ./PMFRG.jl/PMFRGCore.jl ./PMFRG.jl/PMFRGSolve.jl
+```
+in this way the packages can be benchmarked 
+and changed freely.

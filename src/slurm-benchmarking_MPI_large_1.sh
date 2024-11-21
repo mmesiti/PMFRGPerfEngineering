@@ -45,6 +45,7 @@ exit
 
 =#
 using MPI
+using PencilArrays
 MPI.Init()
 
 rank = 0
