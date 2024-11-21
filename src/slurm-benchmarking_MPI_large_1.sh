@@ -109,7 +109,6 @@ Core.eval(Base.get_extension(PMFRGCore, :PMFRGCoreMPIExt), :(timeit_debug_enable
 Core.eval(PMFRGSolve, :(timeit_debug_enabled()=true))
 Core.eval(Base.get_extension(PMFRGSolve, :PMFRGSolveMPIExt), :(timeit_debug_enabled()=true))
 
-
 # Number of nearest neighbor bonds
 # up to which correlations are treated in the lattice. 
 # For NLen = 5, all correlations C_{ij} are zero 
