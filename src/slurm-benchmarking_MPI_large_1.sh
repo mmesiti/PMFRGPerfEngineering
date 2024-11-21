@@ -88,6 +88,10 @@ print_barrier("Loading SpinFRGLattices")
 using SpinFRGLattices
 print_barrier("Loading PMFRG")
 using PMFRG
+print_barrier("Loading PMFRGCore")
+using PMFRGCore
+print_barrier("Loading PMFRGSolve")
+using PMFRGSolve
 using SpinFRGLattices.SquareLattice
 print_barrier("Loading TimerOutputs")
 using TimerOutputs
