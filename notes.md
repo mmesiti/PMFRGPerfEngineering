@@ -243,4 +243,44 @@ Recompiling and relaunching (accelerated partition)
      by assigning more portions to each rank (review 1a.3)
      and either use one `MPI_Ibcast` per portion 
      or one `MPI_Isend` / `MPI_Irecv` per portion for rank.
-  
+ 
+## Benchmarking November 2024
+Doing this in haste after having implemented and tested the PencilArray approach.
+In the meantime 1.11.1 has been released.
+Problems and context:
+1. The packages split between PMFRG/PMFRGCore/PMFRGSolve has actually caused some issues
+   because neither of them is registered, and adding all of them as dev dependencies 
+   seemed a little cumbersome for the final user
+   (although, it could be perfectly fine for benchmarking purposes).
+   So I tried to create a local registry (updating the one from Nils)
+   using LocalRegistry.jl,
+   had several issues (with stolen/regenerated uuids,
+   missing PMFRGCore dependency in some version of the packages
+   (because before they were just dev dependencies)
+   and troubles updating the registry.
+   Finally I ended up creating my own playground registry and registering there
+   PMFRG,PMFRGCore,PMFRGSolve and SpinFRGLattices.
+2. I would like to use 1.10 but there seem to be issues 
+   with installing the packages,
+   possibly related to point 1.
+   (A lot of errors of the kind 
+   "Package X is missing from the cache,
+   this might mean that it does not support precompilation
+   but it is imported by a package that does"
+   or something like that.
+   With 1.11.1 instead everything seems to go smoothly.
+3. Performance with 1.11.1 seems both better and worse 
+   than with older versions of julia.
+   - the small benchmark takes like 42 seconds while with 1.9.x it was taking 23.4 econds
+     https://github.com/NilsNiggemann/PMFRG.jl/issues/8#issuecomment-1922387316
+   - the large benchmark on 1 node takes 1.20h while wih 1.9.x it was taking 1.31h
+   - the large benchmark on 2 nodes takes 1.16h while wih 1.9.x it was taking 9 minutes
+
+Update:
+1. Performance with 1.10.6 seems better. 
+   Still, there seems to be no gain in using PencilArrays+multiple nodes
+   to reduce the solver overhead. 
+   BUT this needs to be tested with more care,
+   for example removing all the callbacks from the solver.
+   TODO: re-run everything removing the callbacks from the solver
+

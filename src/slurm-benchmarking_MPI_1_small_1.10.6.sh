@@ -2,7 +2,7 @@
 #=
 #SBATCH --partition cpuonly
 #SBATCH --time 15
-#SBATCH --nodes 2
+#SBATCH --nodes 1
 #SBATCH --ntasks-per-node 1
 #SBATCH --cpus-per-task=76
 #SBATCH --exclusive
@@ -25,13 +25,13 @@ export UCX_ERROR_SIGNALS="SIGILL,SIGBUS,SIGFPE"
 MPIEXEC="$HOME/.julia/bin/mpiexecjl --project=$PROJECT"
 
 # This file - unfortunately with sbatch the trick ${BASH_SOURCE[0]} does not work.
-SCRIPT="$PROJECT/src/slurm-benchmarking_MPI.sh"
+SCRIPT="$PROJECT/src/slurm-benchmarking_MPI_1_small_1.10.6.sh"
 
 echo "Julia version:"
-julia --version
+julia +1.10.6 --version
 
 COMMAND=($MPIEXEC -n $SLURM_NTASKS 
-         julia --project="$PROJECT" 
+         julia +1.10.6 --project="$PROJECT" 
          --optimize=3 
          --threads $SLURM_CPUS_PER_TASK 
 	 $SCRIPT) 
@@ -183,7 +183,6 @@ print_barrier("Removing data from previous runs ($tempdir)")
 rm(tempdir, recursive=true, force=true)
 mainFile = "$tempdir/" * PMFRG.generateFileName(Par, "_testFile") # specify a file name for main Output
 flowpath = "$tempdir/flows/" # specify path for vertex checkpoints
-
 reset_timer!()
 print_barrier("SolveFRG")
 @time Solution, saved_values = SolveFRG(

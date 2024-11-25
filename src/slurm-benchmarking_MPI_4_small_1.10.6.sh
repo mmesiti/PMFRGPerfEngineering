@@ -1,13 +1,13 @@
 #!/bin/bash
 #=
 #SBATCH --partition cpuonly
-#SBATCH --time 1440
-#SBATCH --nodes 1
+#SBATCH --time 15
+#SBATCH --nodes 4
 #SBATCH --ntasks-per-node 1
 #SBATCH --cpus-per-task=76
 #SBATCH --exclusive
 #SBATCH --dependency singleton
-#SBATCH --job-name pmfrg-benchmark-1
+#SBATCH --job-name pmfrg-benchmark
 
 PROJECT="$PWD"
 
@@ -25,13 +25,13 @@ export UCX_ERROR_SIGNALS="SIGILL,SIGBUS,SIGFPE"
 MPIEXEC="$HOME/.julia/bin/mpiexecjl --project=$PROJECT"
 
 # This file - unfortunately with sbatch the trick ${BASH_SOURCE[0]} does not work.
-SCRIPT="$PROJECT/src/slurm-benchmarking_MPI_large_1.sh"
+SCRIPT="$PROJECT/src/slurm-benchmarking_MPI_4_small_1.10.6.sh"
 
 echo "Julia version:"
-julia --version
+julia +1.10.6 --version
 
 COMMAND=($MPIEXEC -n $SLURM_NTASKS 
-         julia --project="$PROJECT" 
+         julia +1.10.6 --project="$PROJECT" 
          --optimize=3 
          --threads $SLURM_CPUS_PER_TASK 
 	 $SCRIPT) 
@@ -129,6 +129,9 @@ couplings = [J1, J2]
 print_barrier("GetSquareLattice - system toy")
 SystemToy = getSquareLattice(NLenToy, couplings)
 
+print_barrier("GetSquareLattice")
+System = getSquareLattice(NLen, couplings) 
+
 print_barrier("Warm up")
 
 print_barrier("Get Params - toy")
@@ -163,17 +166,14 @@ Solution, saved_values = SolveFRG(
 
 print_barrier("Warmup done, timing real problem now.")
 
-print_barrier("GetSquareLattice")
-System = getSquareLattice(18, [1.]) 
-
 
 print_barrier("Get Params")
 Par = Params( #create a group of all parameters to pass them to the FRG Solver
     System, # geometry, this is always required
     OneLoop(), # method. OneLoop() is the default
-    T=0.4, # Temperature for the simulation.
-    N=50, # Number of positive Matsubara frequencies for the four-point vertex.
-    accuracy=1e-9, #absolute and relative tolerance of the ODE solver.
+    T=0.5, # Temperature for the simulation.
+    N=25, # Number of positive Matsubara frequencies for the four-point vertex.
+    accuracy=1e-3, #absolute and relative tolerance of the ODE solver.
     # For further optional arguments, see documentation of 'NumericalParams'
     MinimalOutput=true,
 )
@@ -191,7 +191,7 @@ print_barrier("SolveFRG")
     UseMPI(),
     MainFile=mainFile,
     CheckpointDirectory=flowpath,
-    method=VCABM(),
+    method=DP5(),
     VertexCheckpoints=[],
     CheckPointSteps=3,
 );
