@@ -23,17 +23,15 @@ export UCX_ERROR_SIGNALS="SIGILL,SIGBUS,SIGFPE"
 MPIEXEC="$HOME/.julia/bin/mpiexecjl --project=$PROJECT"
 
 # This file - unfortunately with sbatch the trick ${BASH_SOURCE[0]} does not work.
-SCRIPT=$(realpath $1)
+SCRIPT="$(realpath "$1")"
 
 echo "Julia version:"
 julia +1.11.6 --version
 
-COMMAND=($MPIEXEC -n $SLURM_NTASKS 
+COMMAND=("$MPIEXEC" -n "$SLURM_NTASKS"
          julia +1.11.6 --project="$PROJECT" 
          --optimize=3 
-         --threads $SLURM_CPUS_PER_TASK 
-	 $SCRIPT) 
-echo ${COMMAND[@]} 
-${COMMAND[@]} 
-
-
+         --threads "$SLURM_CPUS_PER_TASK"
+	 "$SCRIPT")
+echo "${COMMAND[@]}"
+"${COMMAND[@]}"
