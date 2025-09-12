@@ -147,7 +147,7 @@ print_barrier("SolveFRG - toy")
     UseMPI(),
     MainFile=mainFile,
     CheckpointDirectory=flowpath,
-    method=DP5(),
+    method=DP5(thread=OrdinaryDiffEq.True()),
     VertexCheckpoints=[],
     CheckPointSteps=3,
 );
@@ -186,7 +186,7 @@ print_barrier("SolveFRG")
     UseMPI(),
     MainFile=mainFile,
     CheckpointDirectory=flowpath,
-    method=DP5(),
+    method=DP5(thread=OrdinaryDiffEq.True()),
     VertexCheckpoints=[],
     CheckPointSteps=3,
 );

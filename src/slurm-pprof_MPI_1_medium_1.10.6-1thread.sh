@@ -160,7 +160,7 @@ Profile.init(n = 10^8, delay = 0.005)
     MultiThreaded(),
     MainFile=mainFile,
     CheckpointDirectory=flowpath,
-    method=DP5(),
+    method=DP5(thread=OrdinaryDiffEq.True()),
     VertexCheckpoints=[],
     CheckPointSteps=3,
 );

@@ -1,18 +1,17 @@
 #!/bin/bash
 #=
 #SBATCH --partition cpuonly
-#SBATCH --time 1440
-#SBATCH --nodes 1
+#SBATCH --time 15
+#SBATCH --nodes 2
 #SBATCH --ntasks-per-node 1
 #SBATCH --cpus-per-task=76
 #SBATCH --exclusive
 #SBATCH --dependency singleton
-#SBATCH --job-name pmfrg-benchmark-1
+#SBATCH --job-name pmfrg-benchmark
 
 PROJECT="$PWD"
 
 set -o nounset
-module use "$HOME/modules"
 # This is needed anyway by mpiexecjl,
 # and needs to match the content of $PROJECT/LocalPreferences.toml
 # (as set by MPIPreferences.jl).
@@ -25,13 +24,13 @@ export UCX_ERROR_SIGNALS="SIGILL,SIGBUS,SIGFPE"
 MPIEXEC="$HOME/.julia/bin/mpiexecjl --project=$PROJECT"
 
 # This file - unfortunately with sbatch the trick ${BASH_SOURCE[0]} does not work.
-SCRIPT="$PROJECT/src/slurm-benchmarking_MPI_large_1_1.11.1.sh"
+SCRIPT="$PROJECT/src/slurm-benchmarking_MPI_2_medium_1.10.6_VCABM.sh"
 
 echo "Julia version:"
-julia +1.11.1 --version
+julia +1.10.6 --version
 
-COMMAND=($MPIEXEC -n $SLURM_NTASKS 
-         julia +1.11.1 --project="$PROJECT" 
+COMMAND=($MPIEXEC -n $SLURM_NTASKS
+         julia +1.10.6 --project="$PROJECT" 
          --optimize=3 
          --threads $SLURM_CPUS_PER_TASK 
 	 $SCRIPT) 
@@ -46,56 +45,27 @@ exit
 =#
 using MPI
 using PencilArrays
-MPI.Init()
-
-rank = 0
-nranks = 1
-
-if MPI.Initialized()
-    rank = MPI.Comm_rank(MPI.COMM_WORLD)
-    nranks = MPI.Comm_size(MPI.COMM_WORLD)
-end
-
-macro mpi_synchronize(expr)
-    quote
-    for r in 0:(nranks-1)
-        if rank == r
-            print("[$rank/$nranks]: ")
-            $(esc(expr))
-        end
-        if MPI.Initialized()
-            MPI.Barrier(MPI.COMM_WORLD)
-        end
-    end
-    end
-end
-
-function print_barrier(args...)
-    @mpi_synchronize println(args...)
-end
-
-workdir = "dir$rank-$(Threads.nthreads())"
-print_barrier("Removing data from previous runs ($workdir)")
-rm(workdir, recursive=true, force=true) 
+workdir = "medium2-dir-$(Threads.nthreads())"
+println("Removing data from previous runs ($workdir)")
+r2(workdir, recursive=true, force=true) 
 mkdir(workdir)
 cd(workdir)
 
 using ThreadPinning
 pinthreads(:cores)
 
-
-print_barrier("Loading SpinFRGLattices")
+println("Loading SpinFRGLattices")
 using SpinFRGLattices
-print_barrier("Loading PMFRG")
+println("Loading PMFRG")
 using PMFRG
-print_barrier("Loading PMFRGCore")
+println("Loading PMFRGCore")
 using PMFRGCore
-print_barrier("Loading PMFRGSolve")
+println("Loading PMFRGSolve")
 using PMFRGSolve
 using SpinFRGLattices.SquareLattice
-print_barrier("Loading TimerOutputs")
+println("Loading TimerOutputs")
 using TimerOutputs
-print_barrier("Loading OrdinaryDiffEq")
+println("Loading OrdinaryDiffEq")
 using OrdinaryDiffEq
 
 # This does not seem to work.
@@ -105,9 +75,7 @@ using OrdinaryDiffEq
 # This might instead do
 Core.eval(PMFRG, :(timeit_debug_enabled()=true))
 Core.eval(PMFRGCore, :(timeit_debug_enabled()=true))
-Core.eval(Base.get_extension(PMFRGCore, :PMFRGCoreMPIExt), :(timeit_debug_enabled()=true))
 Core.eval(PMFRGSolve, :(timeit_debug_enabled()=true))
-Core.eval(Base.get_extension(PMFRGSolve, :PMFRGSolveMPIExt), :(timeit_debug_enabled()=true))
 
 # Number of nearest neighbor bonds
 # up to which correlations are treated in the lattice. 
@@ -126,12 +94,15 @@ couplings = [J1, J2]
 
 # create a structure that contains all information about the geometry of the problem.
 
-print_barrier("GetSquareLattice - system toy")
+println("GetSquareLattice - system toy")
 SystemToy = getSquareLattice(NLenToy, couplings)
 
-print_barrier("Warm up")
+println("GetSquareLattice")
+System = getSquareLattice(NLen, couplings) 
 
-print_barrier("Get Params - toy")
+println("Warm up")
+
+println("Get Params - toy")
 Par = Params( #create a group of all parameters to pass them to the FRG Solver
     SystemToy, # geometry, this is always required
     OneLoop(), # method. OneLoop() is the default
@@ -142,65 +113,58 @@ Par = Params( #create a group of all parameters to pass them to the FRG Solver
     MinimalOutput=true,
 )
 
-tempdir = "temp-$rank"
-print_barrier("Removing data from previous runs ($tempdir)")
+tempdir = "temp-0"
+println("Removing data from previous runs ($tempdir)")
 rm(tempdir, recursive=true, force=true)
 mainFile = "$tempdir/" * PMFRG.generateFileName(Par, "_testFile") # specify a file name for main Output
 flowpath = "$tempdir/flows/" # specify path for vertex checkpoints
 
-print_barrier("SolveFRG - toy")
-Solution, saved_values = SolveFRG(
+println("SolveFRG - toy")
+_ = SolveFRG(
     Par,
     UseMPI(),
     MainFile=mainFile,
     CheckpointDirectory=flowpath,
-    method=DP5(thread=OrdinaryDiffEq.True()),
+    method=VCABM(true),
     VertexCheckpoints=[],
     CheckPointSteps=3,
 );
 
 
 
-print_barrier("Warmup done, timing real problem now.")
-
-print_barrier("GetSquareLattice")
-System = getSquareLattice(18, [1.]) 
+println("Warmup done, timing real problem now.")
 
 
-print_barrier("Get Params")
+println("Get Params")
 Par = Params( #create a group of all parameters to pass them to the FRG Solver
     System, # geometry, this is always required
-    OneLoop(), # method. OneLoop() is the default
-    T=0.4, # Temperature for the simulation.
-    N=50, # Number of positive Matsubara frequencies for the four-point vertex.
-    accuracy=1e-9, #absolute and relative tolerance of the ODE solver.
-    # For further optional arguments, see documentation of 'NumericalParams'
+    UseMPI(),
+    T=0.5, # Temperature for the simulation.
+    N=40, # Number of positive Matsubara frequencies for the four-point vertex.
+    accuracy=1e-4, #absolute and relative tolerance of the ODE solver.
+    # For further optional arguments, fsee documentation of 'NumericalParams'
     MinimalOutput=true,
 )
 
-tempdir = "temp-$rank"
-print_barrier("Removing data from previous runs ($tempdir)")
+tempdir = "temp-0"
+println("Removing data from previous runs ($tempdir)")
 rm(tempdir, recursive=true, force=true)
 mainFile = "$tempdir/" * PMFRG.generateFileName(Par, "_testFile") # specify a file name for main Output
 flowpath = "$tempdir/flows/" # specify path for vertex checkpoints
 
+
 reset_timer!()
-print_barrier("SolveFRG")
-@time Solution, saved_values = SolveFRG(
+println("SolveFRG")
+_ = SolveFRG(
     Par,
-    UseMPI(),
+    MultiThreaded(),
     MainFile=mainFile,
     CheckpointDirectory=flowpath,
-    method=VCABM(),
+    method=VCABM(true),
     VertexCheckpoints=[],
     CheckPointSteps=3,
 );
 
-@mpi_synchronize print_timer()
-
-if MPI.Initialized()
- MPI.Finalize()
-end
-
+print_timer()
 
 

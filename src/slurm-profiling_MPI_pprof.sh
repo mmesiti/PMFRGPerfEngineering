@@ -143,7 +143,7 @@ Solution, saved_values = SolveFRG(
     UseMPI(),
     MainFile=mainFile,
     CheckpointDirectory=flowpath,
-    method=DP5(),
+    method=DP5(thread=OrdinaryDiffEq.True()),
     VertexCheckpoints=[],
     CheckPointSteps=3,
 );
@@ -181,7 +181,7 @@ Profile.init(n=10^8,delay=0.001)
     UseMPI(),
     MainFile=mainFile,
     CheckpointDirectory=flowpath,
-    method=DP5(),
+    method=DP5(thread=OrdinaryDiffEq.True()),
     VertexCheckpoints=[],
     CheckPointSteps=3,
 );

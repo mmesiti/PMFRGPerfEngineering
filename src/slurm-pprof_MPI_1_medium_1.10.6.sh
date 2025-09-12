@@ -43,7 +43,7 @@ using Profile
 println("Loading PProf")
 using PProf
 
-workdir = "dir0-$(Threads.nthreads())"
+workdir = "pprof-dir0-$(Threads.nthreads())"
 println("Removing data from previous runs ($workdir)")
 rm(workdir, recursive=true, force=true) 
 mkdir(workdir)
@@ -123,7 +123,7 @@ _ = SolveFRG(
     MultiThreaded(),
     MainFile=mainFile,
     CheckpointDirectory=flowpath,
-    method=DP5(),
+    method=DP5(thread=OrdinaryDiffEq.False()),
     VertexCheckpoints=[],
     CheckPointSteps=3,
 );
@@ -160,7 +160,7 @@ Profile.init(n = 10^8, delay = 0.005)
     MultiThreaded(),
     MainFile=mainFile,
     CheckpointDirectory=flowpath,
-    method=DP5(),
+    method=DP5(thread=OrdinaryDiffEq.False()),
     VertexCheckpoints=[],
     CheckPointSteps=3,
 );

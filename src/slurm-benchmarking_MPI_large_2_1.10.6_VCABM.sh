@@ -1,13 +1,13 @@
 #!/bin/bash
 #=
 #SBATCH --partition cpuonly
-#SBATCH --time 1440
-#SBATCH --nodes 1
+#SBATCH --time 60 
+#SBATCH --nodes 2
 #SBATCH --ntasks-per-node 1
 #SBATCH --cpus-per-task=76
 #SBATCH --exclusive
 #SBATCH --dependency singleton
-#SBATCH --job-name pmfrg-benchmark-1
+#SBATCH --job-name pmfrg-benchmark-2
 
 PROJECT="$PWD"
 
@@ -25,10 +25,10 @@ export UCX_ERROR_SIGNALS="SIGILL,SIGBUS,SIGFPE"
 MPIEXEC="$HOME/.julia/bin/mpiexecjl --project=$PROJECT"
 
 # This file - unfortunately with sbatch the trick ${BASH_SOURCE[0]} does not work.
-SCRIPT="$PROJECT/src/slurm-benchmarking_MPI_large_1_1.11.1.sh"
+SCRIPT="$PROJECT/src/slurm-benchmarking_MPI_large_2_1.10.6_VCABM.sh"
 
 echo "Julia version:"
-julia +1.11.1 --version
+julia +1.10.6 --version
 
 COMMAND=($MPIEXEC -n $SLURM_NTASKS 
          julia +1.11.1 --project="$PROJECT" 
@@ -74,7 +74,7 @@ function print_barrier(args...)
     @mpi_synchronize println(args...)
 end
 
-workdir = "dir$rank-$(Threads.nthreads())"
+workdir = "$nranks-dir$rank-$(Threads.nthreads())"
 print_barrier("Removing data from previous runs ($workdir)")
 rm(workdir, recursive=true, force=true) 
 mkdir(workdir)
@@ -109,7 +109,7 @@ Core.eval(Base.get_extension(PMFRGCore, :PMFRGCoreMPIExt), :(timeit_debug_enable
 Core.eval(PMFRGSolve, :(timeit_debug_enabled()=true))
 Core.eval(Base.get_extension(PMFRGSolve, :PMFRGSolveMPIExt), :(timeit_debug_enabled()=true))
 
-# Number of nearest neighbor bonds
+# Number of nearest neighbor bonds 
 # up to which correlations are treated in the lattice. 
 # For NLen = 5, all correlations C_{ij} are zero 
 #if sites i and j are separated by more than 5 nearest neighbor bonds.
@@ -142,7 +142,7 @@ Par = Params( #create a group of all parameters to pass them to the FRG Solver
     MinimalOutput=true,
 )
 
-tempdir = "temp-$rank"
+tempdir = "temp-2-$rank"
 print_barrier("Removing data from previous runs ($tempdir)")
 rm(tempdir, recursive=true, force=true)
 mainFile = "$tempdir/" * PMFRG.generateFileName(Par, "_testFile") # specify a file name for main Output
@@ -154,7 +154,7 @@ Solution, saved_values = SolveFRG(
     UseMPI(),
     MainFile=mainFile,
     CheckpointDirectory=flowpath,
-    method=DP5(thread=OrdinaryDiffEq.True()),
+    method=VCABM(true),
     VertexCheckpoints=[],
     CheckPointSteps=3,
 );
@@ -191,7 +191,7 @@ print_barrier("SolveFRG")
     UseMPI(),
     MainFile=mainFile,
     CheckpointDirectory=flowpath,
-    method=VCABM(),
+    method=VCABM(true),
     VertexCheckpoints=[],
     CheckPointSteps=3,
 );

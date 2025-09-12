@@ -1,13 +1,13 @@
 #!/bin/bash
 #=
 #SBATCH --partition cpuonly
-#SBATCH --time 1440
-#SBATCH --nodes 2
+#SBATCH --time 120
+#SBATCH --nodes 1
 #SBATCH --ntasks-per-node 1
 #SBATCH --cpus-per-task=76
 #SBATCH --exclusive
 #SBATCH --dependency singleton
-#SBATCH --job-name pmfrg-benchmark-2
+#SBATCH --job-name pmfrg-benchmark-1
 
 PROJECT="$PWD"
 
@@ -25,7 +25,7 @@ export UCX_ERROR_SIGNALS="SIGILL,SIGBUS,SIGFPE"
 MPIEXEC="$HOME/.julia/bin/mpiexecjl --project=$PROJECT"
 
 # This file - unfortunately with sbatch the trick ${BASH_SOURCE[0]} does not work.
-SCRIPT="$PROJECT/src/slurm-benchmarking_MPI_large_2_1.10.6.sh"
+SCRIPT="$PROJECT/src/slurm-benchmarking_MPI_large_1_1.10.6_VCABM.sh"
 
 echo "Julia version:"
 julia +1.10.6 --version
@@ -74,7 +74,7 @@ function print_barrier(args...)
     @mpi_synchronize println(args...)
 end
 
-workdir = "2-dir$rank-$(Threads.nthreads())"
+workdir = "$nranks-dir$rank-$(Threads.nthreads())"
 print_barrier("Removing data from previous runs ($workdir)")
 rm(workdir, recursive=true, force=true) 
 mkdir(workdir)
@@ -154,7 +154,7 @@ Solution, saved_values = SolveFRG(
     UseMPI(),
     MainFile=mainFile,
     CheckpointDirectory=flowpath,
-    method=DP5(),
+    method=VCABM(true),
     VertexCheckpoints=[],
     CheckPointSteps=3,
 );
@@ -191,7 +191,7 @@ print_barrier("SolveFRG")
     UseMPI(),
     MainFile=mainFile,
     CheckpointDirectory=flowpath,
-    method=VCABM(),
+    method=VCABM(true),
     VertexCheckpoints=[],
     CheckPointSteps=3,
 );

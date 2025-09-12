@@ -6,7 +6,6 @@
 #SBATCH --ntasks-per-node 1
 #SBATCH --cpus-per-task=76
 #SBATCH --exclusive
-#SBATCH --dependency singleton
 #SBATCH --job-name pmfrg-benchmark-1
 
 PROJECT="$PWD"
@@ -25,10 +24,10 @@ export UCX_ERROR_SIGNALS="SIGILL,SIGBUS,SIGFPE"
 MPIEXEC="$HOME/.julia/bin/mpiexecjl --project=$PROJECT"
 
 # This file - unfortunately with sbatch the trick ${BASH_SOURCE[0]} does not work.
-SCRIPT="$PROJECT/src/slurm-benchmarking_MPI_large_1_1.11.1.sh"
+SCRIPT="$PROJECT/src/slurm-benchmarking_MPI_large_1_1.10.6_DP5.sh"
 
 echo "Julia version:"
-julia +1.11.1 --version
+julia +1.10.6 --version
 
 COMMAND=($MPIEXEC -n $SLURM_NTASKS 
          julia +1.11.1 --project="$PROJECT" 
@@ -74,7 +73,7 @@ function print_barrier(args...)
     @mpi_synchronize println(args...)
 end
 
-workdir = "dir$rank-$(Threads.nthreads())"
+workdir = "$nranks-dir$rank-$(Threads.nthreads())"
 print_barrier("Removing data from previous runs ($workdir)")
 rm(workdir, recursive=true, force=true) 
 mkdir(workdir)
@@ -191,7 +190,7 @@ print_barrier("SolveFRG")
     UseMPI(),
     MainFile=mainFile,
     CheckpointDirectory=flowpath,
-    method=VCABM(),
+    method=DP5(thread=OrdinaryDiffEq.True()),
     VertexCheckpoints=[],
     CheckPointSteps=3,
 );
