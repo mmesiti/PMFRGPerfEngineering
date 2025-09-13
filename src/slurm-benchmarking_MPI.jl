@@ -1,10 +1,8 @@
 using MPI
 using PencilArrays
+using Pkg
 
-using ThreadPinning
-pinthreads(:cores)
-
-
+import ThreadPinning: pinthreads
 using SpinFRGLattices
 using PMFRG
 using PMFRGCore
@@ -13,7 +11,55 @@ using SpinFRGLattices.SquareLattice
 using TimerOutputs
 using OrdinaryDiffEq
 
+#
 
+function main()
+    MPI.Init()
+
+    rank = MPI.Comm_rank(MPI.COMM_WORLD)
+    nranks = MPI.Comm_size(MPI.COMM_WORLD)
+    pinthreads(:cores)
+
+    create_and_cd_into_workdir(rank,nranks,ARGS)
+    activate_timers()
+    integration_method = get_integration_method(ARGS)
+    warmup(integration_method)
+
+    if ARGS[2] == "medium"
+        medium_problem(integration_method)
+    elseif ARGS[2] == "large"
+        large_problem(integration_method)
+    end
+
+    MPI.Finalize()
+
+end
+
+##
+
+function create_and_cd_into_workdir(rank,nranks,ARGS)
+    suffix = join(ARGS, "_")
+    git_commit = get_PMFRG_git_commit()
+    workdir = "dir-$rank/$nranks-$(Threads.nthreads())-$suffix-$(git_commit[1:7])"
+    print_barrier("Removing data from previous runs ($workdir)")
+    rm(workdir, recursive=true, force=true)
+    mkdir(workdir)
+    cd(workdir)
+end
+
+function activate_timers()
+    # This does not seem to work.
+    # TimerOutputs.enable_debug_timings(PMFRG)
+    # TimerOutputs.enable_debug_timings(Base.get_extension(PMFRG,:PMFRGMPIExt))
+    # Message is "timeit_debug_enable"
+    # This might instead do
+    Core.eval(PMFRG, :(timeit_debug_enabled() = true))
+    Core.eval(PMFRGCore, :(timeit_debug_enabled() = true))
+    Core.eval(Base.get_extension(PMFRGCore, :PMFRGCoreMPIExt), :(timeit_debug_enabled() = true))
+    Core.eval(PMFRGSolve, :(timeit_debug_enabled() = true))
+    Core.eval(Base.get_extension(PMFRGSolve, :PMFRGSolveMPIExt), :(timeit_debug_enabled() = true))
+
+end
 
 
 
@@ -165,10 +211,15 @@ function large_problem(integration_method)
 
 end
 
-MPI.Init()
+###
 
-rank = MPI.Comm_rank(MPI.COMM_WORLD)
-nranks = MPI.Comm_size(MPI.COMM_WORLD)
+function get_PMFRG_git_commit()
+    pmfrg_path = first( v.source for _,v in Pkg.dependencies() if v.name == "PMFRG")
+    out = Pipe()
+    run(pipeline(`git -C $pmfrg_path rev-parse HEAD`, stdout=out))
+    close(out.in)
+    String(read(out))
+end
 
 macro mpi_synchronize(expr)
     quote
@@ -189,42 +240,7 @@ function print_barrier(args...)
 end
 
 
-function create_and_cd_into_workdir(ARGS)
-    suffix=join(ARGS,"_")
-    workdir = "dir-$rank/$nranks-$(Threads.nthreads())-$suffix"
-    print_barrier("Removing data from previous runs ($workdir)")
-    rm(workdir, recursive=true, force=true)
-    mkdir(workdir)
-    cd(workdir)
-end
+####
 
 
-
-function activate_timers()
-    # This does not seem to work.
-    # TimerOutputs.enable_debug_timings(PMFRG)
-    # TimerOutputs.enable_debug_timings(Base.get_extension(PMFRG,:PMFRGMPIExt))
-    # Message is "timeit_debug_enable"
-    # This might instead do
-    Core.eval(PMFRG, :(timeit_debug_enabled() = true))
-    Core.eval(PMFRGCore, :(timeit_debug_enabled() = true))
-    Core.eval(Base.get_extension(PMFRGCore, :PMFRGCoreMPIExt), :(timeit_debug_enabled() = true))
-    Core.eval(PMFRGSolve, :(timeit_debug_enabled() = true))
-    Core.eval(Base.get_extension(PMFRGSolve, :PMFRGSolveMPIExt), :(timeit_debug_enabled() = true))
-
-end
-
-
-
-create_and_cd_into_workdir(ARGS)
-activate_timers()
-integration_method = get_integration_method(ARGS)
-warmup(integration_method)
-
-if ARGS[2] == "medium"
-    medium_problem(integration_method)
-elseif ARGS[2] == "large"
-    large_problem(integration_method)
-end
-
-MPI.Finalize()
+main()
