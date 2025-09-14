@@ -32,6 +32,6 @@ COMMAND=("$MPIEXEC" --project="$PROJECT"
          julia +1.11.6 --project="$PROJECT" 
          --optimize=3 
          --threads "$SLURM_CPUS_PER_TASK"
-	 "$SCRIPT")
+	 "$SCRIPT" "$@")
 echo "${COMMAND[@]}"
 "${COMMAND[@]}"

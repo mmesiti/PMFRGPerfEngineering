@@ -62,7 +62,7 @@ end
 function create_and_cd_into_workdir(rank,nranks,ARGS)
     suffix = join(ARGS, "_")
     git_commit = get_PMFRG_git_commit()
-    workdir = "dir-$rank/$nranks-$(Threads.nthreads())-$suffix-$(git_commit[1:7])"
+    workdir = "dir-$rank-of-$nranks-$(Threads.nthreads())-$suffix-$(git_commit[1:7])"
     print_barrier("Removing data from previous runs ($workdir)")
     rm(workdir, recursive=true, force=true)
     mkdir(workdir)
