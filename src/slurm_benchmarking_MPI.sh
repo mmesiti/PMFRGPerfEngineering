@@ -23,6 +23,7 @@ MPIEXEC="$HOME/.julia/bin/mpiexecjl"
 
 # This file - unfortunately with sbatch the trick ${BASH_SOURCE[0]} does not work.
 SCRIPT="$(realpath "$1")"
+shift
 
 echo "Julia version:"
 julia +1.11.6 --version
