@@ -128,7 +128,7 @@ function warmup(integration_method)
         MinimalOutput=true,
     )
 
-    tempdir = "temp-$rank"
+    tempdir = "temp"
     print_barrier("Removing data from previous runs ($tempdir)")
     rm(tempdir, recursive=true, force=true)
     mainFile = "$tempdir/" * PMFRG.generateFileName(Par, "_testFile") # specify a file name for main Output
@@ -171,7 +171,7 @@ function medium_problem(integration_method)
         MinimalOutput=true,
     )
 
-    tempdir = "temp-$rank"
+    tempdir = "temp"
     print_barrier("Removing data from previous runs ($tempdir)")
     rm(tempdir, recursive=true, force=true)
     mainFile = "$tempdir/" * PMFRG.generateFileName(Par, "_testFile") # specify a file name for main Output
@@ -210,7 +210,7 @@ function large_problem(integration_method)
         MinimalOutput=true,
     )
 
-    tempdir = "temp-$rank"
+    tempdir = "temp"
     print_barrier("Removing data from previous runs ($tempdir)")
     rm(tempdir, recursive=true, force=true)
     mainFile = "$tempdir/" * PMFRG.generateFileName(Par, "_testFile") # specify a file name for main Output
