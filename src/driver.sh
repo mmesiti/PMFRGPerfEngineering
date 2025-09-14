@@ -1,4 +1,5 @@
 #!/usr/bin/env sh
+set -x
 SLURMSCRIPT="$PWD/src/slurm_benchmarking_MPI.sh"
 JULIASCRIPT="$PWD/src/slurm_benchmarking_MPI.jl"
 PMFRGPATH="$(realpath "$PWD/../PMFRG.jl")"
@@ -21,8 +22,8 @@ for METHOD in DP5 VCABM
 do
     for NNODES in 1 2 4
     do
-        OUTFILENAME=$(get_outfilename "$NNODES" "$method" "76" "medium")
-        "$SLURMSCRIPT" --output "$OUTFILENAME" --nnodes="$NNODES" --cpus-per-task=76 "$JULIASCRIPT" "$METHOD" "medium"
+        OUTFILENAME=$(get_outfilename "$NNODES" "$METHOD" "76" "MEDIUM")
+        sbatch --output "$OUTFILENAME" --nodes="$NNODES" --cpus-per-task=76 "$SLURMSCRIPT" "$JULIASCRIPT" "$METHOD" "medium"
     done
 done
 
@@ -31,7 +32,7 @@ for METHOD in DP5 VCABM
 do
     for NNODES in 1 2 4 8
     do
-        OUTFILENAME=$(get_outfilename "$NNODES" "$method" "76" "large")
-        "$SLURMSCRIPT" --output "$OUTFILENAME"  --nnodes="$NNODES" --cpus-per-task=76 "$JULIASCRIPT" "$METHOD" "large"
+        OUTFILENAME=$(get_outfilename "$NNODES" "$METHOD" "76" "LARGE")
+        sbatch --output "$OUTFILENAME"  --nodes="$NNODES" --cpus-per-task=76  "$SLURMSCRIPT" "$JULIASCRIPT" "$METHOD" "large"
     done
 done

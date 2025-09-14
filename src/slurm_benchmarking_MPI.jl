@@ -13,6 +13,28 @@ using OrdinaryDiffEq
 
 #
 
+macro mpi_synchronize(expr)
+    quote
+        let 
+            rank = MPI.Comm_rank(MPI.COMM_WORLD)
+            nranks = MPI.Comm_size(MPI.COMM_WORLD)
+     
+            for r in 0:(nranks-1)
+                if rank == r
+                    print("[$rank/$nranks]: ")
+                    $(esc(expr))
+                end
+                if MPI.Initialized()
+                    MPI.Barrier(MPI.COMM_WORLD)
+                end
+            end
+        end
+    end
+end
+
+
+#
+
 function main()
     MPI.Init()
 
@@ -214,25 +236,11 @@ end
 ###
 
 function get_PMFRG_git_commit()
-    pmfrg_path = first( v.source for _,v in Pkg.dependencies() if v.name == "PMFRG")
+    pmfrg_path = first( v.source for (_,v) in Pkg.dependencies() if v.name == "PMFRG")
     out = Pipe()
     run(pipeline(`git -C $pmfrg_path rev-parse HEAD`, stdout=out))
     close(out.in)
     String(read(out))
-end
-
-macro mpi_synchronize(expr)
-    quote
-        for r in 0:(nranks-1)
-            if rank == r
-                print("[$rank/$nranks]: ")
-                $(esc(expr))
-            end
-            if MPI.Initialized()
-                MPI.Barrier(MPI.COMM_WORLD)
-            end
-        end
-    end
 end
 
 function print_barrier(args...)
