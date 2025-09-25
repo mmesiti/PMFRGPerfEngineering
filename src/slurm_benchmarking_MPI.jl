@@ -1,3 +1,4 @@
+
 using MPI
 using PencilArrays
 using Pkg
@@ -10,6 +11,7 @@ using PMFRGSolve
 using SpinFRGLattices.SquareLattice
 using TimerOutputs
 using OrdinaryDiffEq
+using Static
 
 #
 
@@ -36,10 +38,14 @@ end
 #
 
 function main()
+    println("Initializing MPI...")
     MPI.Init()
+    print_barrier("Initialized MPI...")
+
 
     rank = MPI.Comm_rank(MPI.COMM_WORLD)
     nranks = MPI.Comm_size(MPI.COMM_WORLD)
+    print_barrier("Pinning threads...")
     pinthreads(:cores)
 
     create_and_cd_into_workdir(rank,nranks,ARGS)
@@ -58,6 +64,14 @@ function main()
 end
 
 ##
+
+function save_env(filename)
+    open(filename,"w") do f
+        for (k,v) in ENV
+            write(f,"$k=$v\n")
+        end
+    end
+end
 
 function create_and_cd_into_workdir(rank,nranks,ARGS)
     suffix = join(ARGS, "_")
@@ -88,9 +102,9 @@ end
 function get_integration_method(ARGS)
     SOLVERMETHOD = ARGS[1]
     if SOLVERMETHOD == "DP5"
-        DP5(thread=OrdinaryDiffEq.True())
+        DP5(thread=Static.True())
     elseif SOLVERMETHOD == "VCABM"
-        VCABM(true)
+        VCABM(thread=Static.True())
     end
 end
 
@@ -236,6 +250,7 @@ end
 ###
 
 function get_PMFRG_git_commit()
+    print_barrier("finding git commit...")
     pmfrg_path = first( v.source for (_,v) in Pkg.dependencies() if v.name == "PMFRG")
     out = Pipe()
     run(pipeline(`git -C $pmfrg_path rev-parse HEAD`, stdout=out))
