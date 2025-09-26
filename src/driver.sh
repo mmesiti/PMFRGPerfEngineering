@@ -26,6 +26,12 @@ check_head_and_tail(){
 	large_loop message_file_missing check_head_and_tail_single
 }
 
+rmfiles(){
+	medium_loop rmfile rmfile
+	large_loop rmfile rmfile 
+}
+
+
 ##
 medium_loop(){
     F_NOT_EXIST="$1"
@@ -115,6 +121,15 @@ check_head_and_tail_single(){
     head -n "$REAL_OUTPUT_LENGTH" "$OUTFILENAME" | tail
     echo "======================="
 }
+rmfile(){
+    local METHOD=$1
+    local NNODES=$2
+    local OUTFILENAME=$3
+    echo "Moving $OUTFILENAME to thrash..."
+    mkdir -p thrash_can
+    mv "$OUTFILENAME" thrash_can
+}
+
 
 get_outfilename(){
     NNODES="$1"
