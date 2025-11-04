@@ -6,7 +6,8 @@
 #SBATCH --exclusive
 #SBATCH --job-name pmfrg-benchmark
 
-PROJECT="$PWD"
+PROJECT="$1"
+shift
 
 set -o nounset
 module purge
