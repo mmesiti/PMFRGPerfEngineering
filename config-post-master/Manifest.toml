@@ -2,7 +2,7 @@
 
 julia_version = "1.10.10"
 manifest_format = "2.0"
-project_hash = "088f0607e809dda8b1195d260961ea5547ea5fc2"
+project_hash = "25b88c4d53a5a286591977d6c5ac3a1d895a724a"
 
 [[deps.ADTypes]]
 git-tree-sha1 = "27cecae79e5cc9935255f90c53bb831cc3c870d7"
@@ -355,10 +355,16 @@ version = "6.190.2"
     Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
 [[deps.DiffEqCallbacks]]
-deps = ["ConcreteStructs", "DataStructures", "DiffEqBase", "DifferentiationInterface", "Functors", "LinearAlgebra", "Markdown", "RecipesBase", "RecursiveArrayTools", "SciMLBase", "StaticArraysCore"]
-git-tree-sha1 = "397ef6fffcf418ba55264ba785b032b8a136903b"
+deps = ["ConcreteStructs", "DataStructures", "DiffEqBase", "DifferentiationInterface", "LinearAlgebra", "Markdown", "RecipesBase", "RecursiveArrayTools", "SciMLBase", "StaticArraysCore"]
+git-tree-sha1 = "448d118c4a7763b041fc41cf91c85d23773f1dc2"
 uuid = "459566f4-90b8-5000-8ac3-15dfb0a30def"
-version = "4.9.0"
+version = "4.10.1"
+
+    [deps.DiffEqCallbacks.extensions]
+    DiffEqCallbacksFunctorsExt = "Functors"
+
+    [deps.DiffEqCallbacks.weakdeps]
+    Functors = "d9f16b24-f501-4c13-a1f2-28368ffc5196"
 
 [[deps.DiffResults]]
 deps = ["StaticArraysCore"]
@@ -620,12 +626,6 @@ deps = ["FunctionWrappers"]
 git-tree-sha1 = "b104d487b34566608f8b4e1c39fb0b10aa279ff8"
 uuid = "77dc65aa-8811-40c2-897b-53d922fa7daf"
 version = "0.1.3"
-
-[[deps.Functors]]
-deps = ["Compat", "ConstructionBase", "LinearAlgebra", "Random"]
-git-tree-sha1 = "60a0339f28a233601cb74468032b5c302d5067de"
-uuid = "d9f16b24-f501-4c13-a1f2-28368ffc5196"
-version = "0.5.2"
 
 [[deps.Future]]
 deps = ["Random"]
@@ -1000,14 +1000,20 @@ uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
 
 [[deps.LoopVectorization]]
 deps = ["ArrayInterface", "CPUSummary", "CloseOpenIntervals", "DocStringExtensions", "HostCPUFeatures", "IfElse", "LayoutPointers", "LinearAlgebra", "OffsetArrays", "PolyesterWeave", "PrecompileTools", "SIMDTypes", "SLEEFPirates", "Static", "StaticArrayInterface", "ThreadingUtilities", "UnPack", "VectorizationBase"]
-git-tree-sha1 = "e5afce7eaf5b5ca0d444bcb4dc4fd78c54cbbac0"
+git-tree-sha1 = "a9fc7883eb9b5f04f46efb9a540833d1fad974b3"
 uuid = "bdcacae8-1622-11e9-2a5c-532679323890"
-version = "0.12.172"
-weakdeps = ["ChainRulesCore", "ForwardDiff", "SpecialFunctions"]
+version = "0.12.173"
 
     [deps.LoopVectorization.extensions]
     ForwardDiffExt = ["ChainRulesCore", "ForwardDiff"]
+    ForwardDiffNNlibExt = ["ForwardDiff", "NNlib"]
     SpecialFunctionsExt = "SpecialFunctions"
+
+    [deps.LoopVectorization.weakdeps]
+    ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
+    ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
+    NNlib = "872c559c-99b0-510c-b3b7-b6c96a88d5cd"
+    SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
 
 [[deps.LoweredCodeUtils]]
 deps = ["CodeTracking", "Compiler", "JuliaInterpreter"]
@@ -1467,29 +1473,29 @@ version = "10.42.0+1"
 [[deps.PMFRG]]
 deps = ["DiffEqBase", "DiffEqCallbacks", "H5Zblosc", "HDF5", "PMFRGCore", "PMFRGSolve", "SciMLBase", "SpinFRGLattices"]
 path = "../../PMFRG.jl"
-uuid = "307b9980-580b-4ffb-acf7-52430be9d54f"
-version = "0.1.0"
-weakdeps = ["MPI"]
+uuid = "37d616f8-0bcb-4e18-9a76-f5d18f52650d"
+version = "2.3.0"
+weakdeps = ["MPI", "PencilArrays"]
 
 [[deps.PMFRGCore]]
 deps = ["FixedPoint", "H5Zblosc", "HDF5", "LoopVectorization", "Printf", "SpinFRGLattices", "StructArrays", "TimerOutputs"]
 path = "../../PMFRG.jl/PMFRGCore.jl"
-uuid = "658c49e6-d26a-4ae0-a540-09812f09d5ba"
-version = "2.2.1"
-weakdeps = ["MPI"]
+uuid = "307b9980-580b-4ffb-acf7-52430be9d54f"
+version = "0.1.0"
+weakdeps = ["MPI", "PencilArrays"]
 
     [deps.PMFRGCore.extensions]
-    PMFRGCoreMPIExt = ["MPI"]
+    PMFRGCoreMPIExt = ["MPI", "PencilArrays"]
 
 [[deps.PMFRGSolve]]
 deps = ["DiffEqBase", "DiffEqCallbacks", "EnzymeCore", "HDF5", "OrdinaryDiffEqLowOrderRK", "PMFRGCore", "SciMLBase", "SpinFRGLattices", "StructArrays", "TimerOutputs"]
 path = "../../PMFRG.jl/PMFRGSolve.jl"
 uuid = "8afc4f61-39e9-4661-bf82-e6695b8d2018"
-version = "0.1.0"
-weakdeps = ["MPI"]
+version = "0.1.1"
+weakdeps = ["MPI", "PencilArrays"]
 
     [deps.PMFRGSolve.extensions]
-    PMFRGSolveMPIExt = ["MPI"]
+    PMFRGSolveMPIExt = ["MPI", "PencilArrays"]
 
 [[deps.PProf]]
 deps = ["AbstractTrees", "CodecZlib", "EnumX", "FlameGraphs", "Libdl", "OrderedCollections", "Profile", "ProgressMeter", "ProtoBuf", "pprof_jll"]
@@ -2148,7 +2154,7 @@ uuid = "8e850ede-7688-5339-a07c-302acd2aaf8d"
 version = "1.52.0+1"
 
 [[deps.oneTBB_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl"]
+deps = ["Artifacts", "JLLWrappers", "LazyArtifacts", "Libdl"]
 git-tree-sha1 = "d5a767a3bb77135a99e433afe0eb14cd7f6914c3"
 uuid = "1317d2d5-d96f-522e-a858-c73665f53c3e"
 version = "2022.0.0+0"

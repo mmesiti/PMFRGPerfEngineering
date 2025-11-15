@@ -11,15 +11,12 @@ NTASKS_PER_NODE=${3:-1}
 
 JULIASCRIPT="$PWD/src/slurm_benchmarking_MPI.jl"
 SLURMSCRIPT="$PWD/src/slurm_benchmarking_MPI.sh"
-MAIN_FUNCTIONS=(main 
-	        check 
-		check_head_and_tail)
 
 #
 
 main(){
-	medium_loop medium_f_produce file_present_and_ok
-	large_loop large_f_produce file_present_and_ok 
+	medium_loop medium_f_produce file_present_and_ok 
+	large_loop large_f_produce file_present_and_ok  
 }
 
 check(){
@@ -49,12 +46,12 @@ medium_loop(){
         for NNODES in 1 2 4	
         do
             OUTFILENAME="$(get_outfilename "$NNODES" "$METHOD" "$CPUS_PER_TASK" "MEDIUM" "$NTASKS_PER_NODE")"
-            JOBNAME="$(get_jobname "$NNODES" "$METHOD" "$CPUS_PER_TASK" "MEDIUM")"
+            JOBNAME="$(get_jobname "$NNODES" "$METHOD" "$CPUS_PER_TASK" "MEDIUM" "$NTASKS_PER_NODE")"
             if does_not_exist_or_has_errors "$OUTFILENAME"
             then
-	         "$F_NOT_EXIST" "$METHOD" "$NNODES" "$OUTFILENAME" "$JOBNAME"
+	         "$F_NOT_EXIST" "$METHOD" "$NNODES" "$OUTFILENAME" "$NTASKS_PER_NODE" "$CPUS_PER_TASK" "$JOBNAME"
 	    else
-                 "$F_EXIST" "$METHOD" "$NNODES" "$OUTFILENAME" "$JOBNAME"
+                 "$F_EXIST" "$METHOD" "$NNODES" "$OUTFILENAME" "$NTASKS_PER_NODE" "$CPUS_PER_TASK" "$JOBNAME"
 	    fi
         done
     done
@@ -63,17 +60,17 @@ medium_loop(){
 large_loop(){
     F_NOT_EXIST="$1"
     F_EXIST="$2"
-    for METHOD in DP5 VCABM 
+    for METHOD in VCABM  DP5
     do
-        for NNODES in 1 2 4 8  
+        for NNODES in 1 2 4 8 
         do
             OUTFILENAME="$(get_outfilename "$NNODES" "$METHOD" "$CPUS_PER_TASK" "LARGE" "$NTASKS_PER_NODE")"
-            JOBNAME="$(get_jobname "$NNODES" "$METHOD" "$CPUS_PER_TASK" "MEDIUM")"
+            JOBNAME="$(get_jobname "$NNODES" "$METHOD" "$CPUS_PER_TASK" "LARGE" "$NTASKS_PER_NODE")"
             if does_not_exist_or_has_errors "$OUTFILENAME"
             then
-	        "$F_NOT_EXIST" "$METHOD" "$NNODES" "$OUTFILENAME" "$JOBNAME"
+	        "$F_NOT_EXIST" "$METHOD" "$NNODES" "$OUTFILENAME" "$NTASKS_PER_NODE" "$CPUS_PER_TASK" "$JOBNAME"
 	    else
-	        "$F_EXIST" "$METHOD" "$NNODES" "$OUTFILENAME" "$JOBNAME"
+	        "$F_EXIST" "$METHOD" "$NNODES" "$OUTFILENAME" "$NTASKS_PER_NODE" "$CPUS_PER_TASK" "$JOBNAME"
 	    fi
         done
     done
@@ -94,9 +91,16 @@ medium_f_produce(){
     local METHOD=$1
     local NNODES=$2
     local OUTFILENAME=$3
-    local JOBNAME=$4
+    local NTASKS_PER_NODE=$4
+    local CPUS_PER_TASK=$5
+    local JOBNAME=$6
     echo "$OUTFILENAME needs to be produced"
-    sbatch --output "$OUTFILENAME" --nodes="$NNODES" --job-name "$JOBNAME" \
+    sbatch --output "$OUTFILENAME" \
+	    --nodes="$NNODES" \
+	    --ntasks-per-node="$NTASKS_PER_NODE" \
+	    --cpus-per-task="$CPUS_PER_TASK" \
+	    --job-name "$JOBNAME" \
+	    --cpu-freq=3000 \
 	    "$SLURMSCRIPT" "$PROJECT" "$JULIASCRIPT" "$METHOD" "medium"
 }
 
@@ -105,9 +109,16 @@ large_f_produce(){
     local METHOD=$1
     local NNODES=$2
     local OUTFILENAME=$3
-    local JOBNAME=$4
+    local NTASKS_PER_NODE=$4
+    local CPUS_PER_TASK=$5
+    local JOBNAME=$6
     echo "$OUTFILENAME needs to be produced"
-    sbatch --output "$OUTFILENAME" --nodes="$NNODES" --job-name "$JOBNAME" -t 480 \
+    sbatch --output "$OUTFILENAME" \
+	    --nodes="$NNODES" \
+	    --ntasks-per-node="$NTASKS_PER_NODE" \
+	    --cpus-per-task="$CPUS_PER_TASK" \
+	    --job-name "$JOBNAME" -t 480 \
+	    --cpu-freq=3000 \
 	    "$SLURMSCRIPT" "$PROJECT" "$JULIASCRIPT" "$METHOD" "large"
 }
 
@@ -166,7 +177,7 @@ get_outfilename(){
     local METHOD="$2"
     local CPUS_PER_TASK="$3"
     local PROBLEM="$4"
-    local NTASKS_PER_NODE=${5:-1}
+    local NTASKS_PER_NODE="$5"
     local COMMIT="$(git -C "$PMFRGPATH" rev-parse HEAD)"
     local COMMIT_SHORTENED="${COMMIT:0:6}"
 
@@ -179,11 +190,12 @@ get_jobname(){
     local METHOD="$2"
     local CPUS_PER_TASK="$3"
     local PROBLEM="$4"
-    local NTASKS_PER_NODE=${5:-1}
+    local NTASKS_PER_NODE="$5"
+
     local COMMIT="$(git -C "$PMFRGPATH" rev-parse HEAD)"
     local COMMIT_SHORTENED="${COMMIT:0:3}"
 
-    echo "${COMMIT_SHORTENED}_${METHOD:0:2}_${CPUS_PER_TASK}"
+    echo "${COMMIT_SHORTENED}_${METHOD:0:3}_${CPUS_PER_TASK}_${NTASKS_PER_NODE}_${NNODES}_${PROBLEM:0:3}"
 
 }
 

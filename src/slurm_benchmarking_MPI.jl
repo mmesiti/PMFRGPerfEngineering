@@ -3,11 +3,16 @@ using MPI
 using PencilArrays
 using Pkg
 
-import ThreadPinning: pinthreads
+import ThreadPinning: pinthreads, threadinfo
 using SpinFRGLattices
 using PMFRG
-using PMFRGCore
-using PMFRGSolve
+if "PMFRGCore" in [v.name for v in values(Pkg.dependencies())]
+    # from:
+    # https://discourse.julialang.org/t/new-pkg-how-to-check-if-a-package-is-installed/13141/5
+    @eval using PMFRGCore
+    @eval using PMFRGSolve
+end
+
 using SpinFRGLattices.SquareLattice
 using TimerOutputs
 using OrdinaryDiffEq
@@ -34,6 +39,23 @@ macro mpi_synchronize(expr)
     end
 end
 
+macro mpi_master_only(expr)
+    quote
+        let 
+            rank = MPI.Comm_rank(MPI.COMM_WORLD)
+            nranks = MPI.Comm_size(MPI.COMM_WORLD)
+     
+            if rank == 0
+                print("[$rank/$nranks]: ")
+                $(esc(expr))
+            end
+            if MPI.Initialized()
+                MPI.Barrier(MPI.COMM_WORLD)
+            end
+        end
+    end
+
+end
 
 #
 
@@ -42,16 +64,19 @@ function main()
     MPI.Init()
     print_barrier("Initialized MPI...")
 
+    @mpi_master_only print_version()
 
     rank = MPI.Comm_rank(MPI.COMM_WORLD)
     nranks = MPI.Comm_size(MPI.COMM_WORLD)
     print_barrier("Pinning threads...")
     pinthreads(:cores)
+    @mpi_synchronize threadinfo(; color=false, slurm=true)
 
     create_and_cd_into_workdir(rank,nranks,ARGS)
-    activate_timers()
+    #activate_timers() # There is no reliable way to activate debug timers
     integration_method = get_integration_method(ARGS)
     warmup(integration_method)
+    reset_timer!()
 
     if ARGS[2] == "medium"
         medium_problem(integration_method)
@@ -65,6 +90,10 @@ end
 
 ##
 
+function print_version()
+   Pkg.status(mode=PKGMODE_MANIFEST)
+end
+
 function save_env(filename)
     open(filename,"w") do f
         for (k,v) in ENV
@@ -76,7 +105,8 @@ end
 function create_and_cd_into_workdir(rank,nranks,ARGS)
     suffix = join(ARGS, "_")
     git_commit = get_PMFRG_git_commit()
-    workdir = "dir-$rank-of-$nranks-$(Threads.nthreads())-$suffix-$(git_commit[1:7])"
+    slurm_jobid_suffix=get(ENV,"SLURM_JOB_ID","xxxxxxx")
+    workdir = "dir-$rank-of-$nranks-$(Threads.nthreads())-$suffix-$(git_commit[1:7])-$slurm_jobid_suffix"
     print_barrier("Removing data from previous runs ($workdir)")
     rm(workdir, recursive=true, force=true)
     mkdir(workdir)
@@ -84,17 +114,32 @@ function create_and_cd_into_workdir(rank,nranks,ARGS)
 end
 
 function activate_timers()
-    # This does not seem to work.
-    # TimerOutputs.enable_debug_timings(PMFRG)
-    # TimerOutputs.enable_debug_timings(Base.get_extension(PMFRG,:PMFRGMPIExt))
+    # There seems to be no reliable way to activate debug timers.
+    # They might work for PMFRGCore, 
+    # But not for PMFRGSolve,
+    # For weird reasons.
+    # This does not seem to work, but let's try it anyway
+    TimerOutputs.enable_debug_timings(PMFRG)
+    TimerOutputs.enable_debug_timings(Base.get_extension(PMFRG,:PMFRGMPIExt))
     # Message is "timeit_debug_enable"
     # This might instead do
     Core.eval(PMFRG, :(timeit_debug_enabled() = true))
-    Core.eval(PMFRGCore, :(timeit_debug_enabled() = true))
-    Core.eval(Base.get_extension(PMFRGCore, :PMFRGCoreMPIExt), :(timeit_debug_enabled() = true))
-    Core.eval(PMFRGSolve, :(timeit_debug_enabled() = true))
-    Core.eval(Base.get_extension(PMFRGSolve, :PMFRGSolveMPIExt), :(timeit_debug_enabled() = true))
+    if "PMFRGCore" in [v.name for v in values(Pkg.dependencies())]
+        # from:
+        # https://discourse.julialang.org/t/new-pkg-how-to-check-if-a-package-is-installed/13141/5
 
+        TimerOutputs.enable_debug_timings(PMFRGCore)
+        TimerOutputs.enable_debug_timings(Base.get_extension(PMFRGCore,:PMFRGCoreMPIExt))
+
+        TimerOutputs.enable_debug_timings(PMFRGSolve)
+        TimerOutputs.enable_debug_timings(Base.get_extension(PMFRGSolve,:PMFRGSolveMPIExt))
+
+        Core.eval(PMFRGCore, :(timeit_debug_enabled() = true))
+        Core.eval(Base.get_extension(PMFRGCore, :PMFRGCoreMPIExt), :(timeit_debug_enabled() = true))
+        Core.eval(PMFRGSolve, :(timeit_debug_enabled() = true))
+        Core.eval(Base.get_extension(PMFRGSolve, :PMFRGSolveMPIExt), :(timeit_debug_enabled() = true))
+
+    end
 end
 
 
@@ -159,6 +204,7 @@ function warmup(integration_method)
         VertexCheckpoints=[],
         CheckPointSteps=3,
     )
+
 
 end
 

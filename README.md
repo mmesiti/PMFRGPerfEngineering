@@ -44,8 +44,8 @@ and changed freely.
 ## Using the driver
 Examples:
 ```bash
-PMFRGPATH=../PMFRG.jl-master/ PROJECT=./config-master/ bash src/driver.sh main
-```
-```bash
-PMFRGPATH=../PMFRG.jl PROJECT=./config-post-master/ bash src/driver.sh main
+PMFRGPATH=../PMFRG.jl PROJECT=./config-post-master/ bash src/driver.sh main 76 1
+PMFRGPATH=../PMFRG.jl PROJECT=./config-post-master/ bash src/driver.sh main 38 2
+PMFRGPATH=../PMFRG.jl-master PROJECT=./config-master/ bash src/driver.sh main 76 1
+PMFRGPATH=../PMFRG.jl-master PROJECT=./config-master/ bash src/driver.sh main 38 2
 ```
